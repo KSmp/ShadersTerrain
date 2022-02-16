@@ -9,11 +9,24 @@
 #include <sstream>
 #include <iostream>
 
+struct VertAndFrag {
+	unsigned int vert;
+	unsigned int frag;
+};
+
+struct Tess {
+	unsigned int tcs;
+	unsigned int tes;
+};
+
 class Shader
 {
 public:
 	unsigned int ID;
 	Shader(const char* vertexPath, const char* fragmentPath);
+	Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath);
+	Shader(const char* vertexPath, const char* fragmentPath, const char* tessControlPath, const char* tessEvaluationPath);
+	Shader(const char* vertexPath, const char* fragmentPath, const char* tessControlPath, const char* tessEvaluationPath, const char* geometryPath);
 	void use();
 	// utility uniform functions
 	void setBool(const std::string &name, bool value) const;
@@ -30,7 +43,9 @@ public:
 	void setMat4(const std::string &name, const glm::mat4 &mat) const;
 
 private:
+	VertAndFrag compileVertAndFrag(const char* vertexPath, const char* fragmentPath);
+	unsigned int compileGeo(const char* geometryPath);
+	Tess compileTess(const char* tessControlPath, const char* tessEvaluationPath);
 	void checkCompileErrors(GLuint shader, std::string type);
-
 };
 #endif

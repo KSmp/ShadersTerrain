@@ -74,7 +74,7 @@ int main()
 	glCullFace(GL_BACK);
 
 	// simple vertex and fragment shader - add your own tess and geo shader
-	Shader shader("..\\shaders\\plainVert.vs", "..\\shaders\\plainFrag.fs");
+	Shader shader("..\\shaders\\plainVert.vs", "..\\shaders\\plainFrag.fs", "..\\shaders\\tessControlShader.tcs", "..\\shaders\\tessEvaluationShader.tes");
 
 
 	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
@@ -104,7 +104,8 @@ int main()
 	
 		glBindVertexArray(terrainVAO);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glDrawArrays(GL_TRIANGLES, 0, terrain.getSize());
+		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
+		//glDrawElements(GL_PATCHES, terrain.getSize(), GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

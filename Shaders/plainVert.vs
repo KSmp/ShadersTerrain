@@ -17,8 +17,8 @@ out vec3 FragPos ;
 void main()
 {
     TexCoords = aTexCoords;  
-    FragPos = vec3(model * vec4(aPos, 1.0));
-    gl_Position = projection * view *vec4(FragPos, 1.0);
+    posVS = vec3(model * vec4(aPos, 1.0));
+    //gl_Position = projection * view *vec4(FragPos, 1.0);
 	
 
 }

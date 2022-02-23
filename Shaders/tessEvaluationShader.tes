@@ -14,23 +14,42 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform sampler2D heightMap;
+
 // read in vector arrays from previous shader
 in vec3 posTC[] ;
+in vec2 texCoordsTC[];
 // in vec3 normTC[] ;
 
 // pass along the interpolated values
-// out vec3 normES ;
+out vec3 normES ;
 out vec3 posES ;
+out vec2 texCoordsES;
 
 
 void main()
 {
+    float scale = 50.f;
 
     // interpolate the normal and xyz position using the linear interpolation function
     // use 3D because they are in three dimensions; 2D also included for uv texture coordinates
 
    // normES = interpolate3D(normTC[0], normTC[1], normTC[2]) ;
-   vec3 posES = interpolate3D(posTC[0], posTC[1], posTC[2]) ;
+   posES = interpolate3D(posTC[0], posTC[1], posTC[2]) ;
+   texCoordsES = interpolate2D(texCoordsTC[0], texCoordsTC[1], texCoordsTC[2]);
+
+   float height = texture(heightMap, texCoordsES).x;
+   posES.y = height * scale;
+
+   float right = (textureOffset(heightMap, texCoordsES, ivec2(1, 0)).x) * scale;
+   float left = (textureOffset(heightMap, texCoordsES, ivec2(-1, 0)).x) * scale;
+   float up = (textureOffset(heightMap, texCoordsES, ivec2(0, 1)).x) * scale;
+   float down = (textureOffset(heightMap, texCoordsES, ivec2(0, -1)).x) * scale;
+
+   float lr = left - right;
+   float ud = up - down;
+
+   normES = normalize(vec3(lr, 2.0, ud));
 
    // transform vertex to clip space  - NOTE: WE NEED TO DO IT HERE NOW and not in vertex shader
    gl_Position = projection * view * model * vec4(posES, 1.0);

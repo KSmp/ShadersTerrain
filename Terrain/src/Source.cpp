@@ -27,6 +27,7 @@ const unsigned int SCR_HEIGHT = 900;
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processInput(GLFWwindow *window);
 unsigned int loadTexture(char const * path);
 //unsigned int loadTexture2(char const * path);
@@ -45,6 +46,11 @@ unsigned int terrainVAO;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+// flags
+bool stepTessOn = true;
+bool linearTessOn = false;
+bool expoTessOn = false;
+
 int main()
 {
 	glfwInit();
@@ -62,6 +68,7 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetKeyCallback(window, key_callback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -76,6 +83,7 @@ int main()
 	// simple vertex and fragment shader - add your own tess and geo shader
 	Shader shader("..\\shaders\\plainVert.vs", "..\\shaders\\plainFrag.fs", "..\\shaders\\tessControlShader.tcs", "..\\shaders\\tessEvaluationShader.tes");
 
+	unsigned int heightMap = loadTexture("..\\resources\\heightMap.jpg");
 
 	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
 	Terrain terrain(50, 50,10);
@@ -101,9 +109,22 @@ int main()
 	    shader.setMat4("projection", projection);
 		shader.setMat4("view", view);
 		shader.setMat4("model", model);
+		shader.setVec3("viewPos", camera.Position);
+
+		// textures
+		shader.setInt("heightMap", 0);
+
+		// flags
+		shader.setBool("stepTessOn", stepTessOn);
+		shader.setBool("linearTessOn", linearTessOn);
+		shader.setBool("expoTessOn", expoTessOn);
 	
 		glBindVertexArray(terrainVAO);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, heightMap);
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 		//glDrawElements(GL_PATCHES, terrain.getSize(), GL_UNSIGNED_INT, 0);
 
@@ -120,17 +141,19 @@ int main()
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window)
 {
+	float speed = deltaTime * 10;
+
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, deltaTime);
+		camera.ProcessKeyboard(FORWARD, speed);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
+		camera.ProcessKeyboard(BACKWARD, speed);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, deltaTime);
+		camera.ProcessKeyboard(LEFT, speed);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, deltaTime);
+		camera.ProcessKeyboard(RIGHT, speed);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -210,7 +233,35 @@ unsigned int loadTexture(char const * path)
 	return textureID;
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+	{
+		linearTessOn = false;
+		expoTessOn = false;
 
+		stepTessOn = !stepTessOn;
+		std::cout << "STEP TESS toggled! " << stepTessOn << std::endl;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+	{
+		stepTessOn = false;
+		expoTessOn = false;
+
+		linearTessOn = !linearTessOn;
+		std::cout << "LINEAR TESS toggled! " << linearTessOn << std::endl;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+	{
+		stepTessOn = false;
+		linearTessOn = false;
+
+		expoTessOn = !expoTessOn;
+		std::cout << "EXPO TESS toggled! " << expoTessOn << std::endl;
+	}
+}
 
 
 

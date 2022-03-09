@@ -6,8 +6,8 @@ vec3 getNormal() ;
 in vec3 posES[] ;
 in vec3 normES[] ;
 
-out vec3 gNormals ;
-out vec3 gWorldPos_FS_in ;
+out vec3 normG;
+out vec3 posG;
 
 
 void main()
@@ -15,8 +15,8 @@ void main()
    for(int i = 0 ; i < 3; i++)
    {
       gl_Position = gl_in[i].gl_Position ;
-      gWorldPos_FS_in = posES[i] ;
-      gNormals = getNormal() ;
+      posG = posES[i] ;
+      normG = getNormal();
       //gNormals = normES[i];
       EmitVertex() ;
   }

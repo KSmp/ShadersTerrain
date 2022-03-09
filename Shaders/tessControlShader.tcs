@@ -26,9 +26,6 @@ uniform bool expoTessOn;
 
 void main()
 {
-  // tesselation level; we will find this automatically later but for now hardcoded value
-   int tessLevel = 4;
-
    // gpu can calculate each control point in parallel
    // tesselation level same for entire patch so only need to set it once (for the first control point)
    // gl_invocation called for each control point
@@ -36,20 +33,21 @@ void main()
    {
 		// Calculate the tessellation levels
 
-        const int vertNum = 3;
-        float cameraToVertexDist[vertNum];
+        float cameraToVertexDist[3];
 
-        for (int i = 0; i < vertNum; i++) {
-            cameraToVertexDist[i] = distance(viewPos, posVS[i]);
-        }
+        cameraToVertexDist[0] = distance(viewPos, posVS[0]);
+        cameraToVertexDist[1] = distance(viewPos, posVS[1]);
+        cameraToVertexDist[2] = distance(viewPos, posVS[2]);
 
-        for (int i = 0; i < vertNum - 1; i++) {
-            gl_TessLevelOuter[i] = GetTessLevel(cameraToVertexDist[i], cameraToVertexDist[i + 1]);
-        }
-            
-            gl_TessLevelOuter[vertNum - 1] = GetTessLevel(cameraToVertexDist[vertNum - 1], cameraToVertexDist[0]);
-            gl_TessLevelInner[0] = gl_TessLevelOuter[1]; 
+        //gl_TessLevelOuter[0] = GetTessLevel(cameraToVertexDist[0], cameraToVertexDist[1]);
+        //gl_TessLevelOuter[1] = GetTessLevel(cameraToVertexDist[1], cameraToVertexDist[2]);
+        //gl_TessLevelOuter[2] = GetTessLevel(cameraToVertexDist[2], cameraToVertexDist[0]);
 
+        gl_TessLevelOuter[0] = GetTessLevel(cameraToVertexDist[1], cameraToVertexDist[2]);
+        gl_TessLevelOuter[1] = GetTessLevel(cameraToVertexDist[2], cameraToVertexDist[0]);
+        gl_TessLevelOuter[2] = GetTessLevel(cameraToVertexDist[0], cameraToVertexDist[1]);
+
+        gl_TessLevelInner[0] = gl_TessLevelOuter[2];
    }
 
    // pass through position and normal information
@@ -62,19 +60,19 @@ float GetTessLevel(float dist1, float dist2) {
     float avg = (dist1 + dist2) / 2.0;
 
     if (stepTessOn) {
-            if (avg < 25) {
+            if (avg < 50) {
+                return 1000;
+            } else if (avg < 70) {
+                return 15;
+            } else if (avg < 100) {
                 return 10;
-            } else if (avg < 50) {
-                return 5;
-            } if (avg < 75) {
-                return 2;
             } else {
-                return 1;
+                return 5;
             }
     }
 
     if (linearTessOn) {
-        float a = 10.0;
+        float a = 100.0;
         float b = -0.5;
 
         float result = a + b * avg;

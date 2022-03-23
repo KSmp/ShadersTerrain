@@ -84,6 +84,7 @@ int main()
 	Shader shader("..\\shaders\\plainVert.vs", "..\\shaders\\plainFrag.fs", "..\\shaders\\tessControlShader.tcs", "..\\shaders\\tessEvaluationShader.tes");
 
 	unsigned int heightMap = loadTexture("..\\resources\\heightMap.jpg");
+	unsigned int rockTexture = loadTexture("..\\resources\\moss.jpg");
 
 	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
 	Terrain terrain(50, 50,10);
@@ -113,6 +114,7 @@ int main()
 
 		// textures
 		shader.setInt("heightMap", 0);
+		shader.setInt("rockTexture", 1);
 
 		// flags
 		shader.setBool("stepTessOn", stepTessOn);
@@ -123,6 +125,9 @@ int main()
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, heightMap);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, rockTexture);
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());

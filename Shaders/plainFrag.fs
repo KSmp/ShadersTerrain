@@ -2,6 +2,7 @@
 
 in vec3 normES;
 in vec3 posES;
+in vec2 texCoordsES;
 
 out vec4 FragColor;
 
@@ -12,6 +13,8 @@ vec3 objCol = vec3(0.5, 0.5, 0.5);
 float ambientFactor = 0.7;
 float specularStrength = 0.4;
 float shine = 128;
+
+uniform sampler2D rockTexture;
 
 void getObjCol();
 vec3 getDirectionalLight(vec3 norm);
@@ -27,11 +30,17 @@ void getObjCol() {
     float height = posES.y/scale;
     vec3 green = vec3(0.3, 0.35, 0.15);
     vec3 gray = vec3(0.5, 0.4, 0.5);
+    vec3 white = vec3(1.0);
+    vec3 rock = texture(rockTexture, (texCoordsES * 5.0)).xyz;
 
-    if (height > 0.4) {
-        objCol = mix(green, gray, smoothstep(0.3, 1.0, height));
-    } else {
-        objCol = gray;
+    objCol = green;
+
+    if (height > 4.0) {
+        objCol = white;
+    } else if (height > 3.5) {
+        objCol = mix(rock, white, smoothstep(3.5, 4.2, height));
+    } else if (height > 1.3) {
+        objCol = mix(green, rock, smoothstep(1.3, 2.0, height));
     }
 }
 

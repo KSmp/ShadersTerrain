@@ -24,7 +24,7 @@ uniform vec4 skyColour;
 
 void getObjCol();
 vec3 getDirectionalLight(vec3 norm);
-vec4 triPlaner();
+vec4 triPlanar();
 
 void main()
 {   
@@ -33,14 +33,14 @@ void main()
     FragColor = mix(skyColour, FragColor, visibility);
 }
 
-vec4 triPlaner(sampler2D textureToSample) {
+vec4 triPlanar(sampler2D textureToSample, float scale = 1.0) {
     vec3 blendPercent = normalize(abs(normES));
     float blendSum = (blendPercent.x + blendPercent.y + blendPercent.z);
     blendPercent = blendPercent/vec3(blendSum);
 
-    vec4 xaxis = texture(textureToSample, posES.yz);
-    vec4 yaxis = texture(textureToSample, posES.xz);
-    vec4 zaxis = texture(textureToSample, posES.xy);
+    vec4 xaxis = texture(textureToSample, posES.yz * scale);
+    vec4 yaxis = texture(textureToSample, posES.xz * scale);
+    vec4 zaxis = texture(textureToSample, posES.xy * scale);
 
     return xaxis * blendPercent.x + yaxis * blendPercent.y + zaxis * blendPercent.z;
 }
@@ -50,8 +50,8 @@ void getObjCol() {
     vec3 green = vec3(0.3, 0.35, 0.15);
     vec3 gray = vec3(0.5, 0.4, 0.5);
     vec3 white = vec3(1.0);
-    vec3 rock = triPlaner(rockTexture).rgb;
-    vec3 moss = triPlaner(mossTexture).rgb;
+    vec3 rock = triPlanar(rockTexture, 0.05).rgb;
+    vec3 moss = triPlanar(mossTexture, 0.1).rgb;
 
     objCol = moss;
 

@@ -84,14 +84,17 @@ int main()
 	Shader shader("..\\shaders\\plainVert.vs", "..\\shaders\\plainFrag.fs", "..\\shaders\\tessControlShader.tcs", "..\\shaders\\tessEvaluationShader.tes");
 
 	unsigned int heightMap = loadTexture("..\\resources\\heightMap.jpg");
-	unsigned int rockTexture = loadTexture("..\\resources\\moss.jpg");
+	unsigned int rockTexture = loadTexture("..\\resources\\rock\\diffuse.jpg");
+	unsigned int mossTexture = loadTexture("..\\resources\\moss\\diffuse.jpg");
+	unsigned int snowTexture = loadTexture("..\\resources\\snow\\diffuse.jpg");
 
 	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
 	Terrain terrain(50, 50,10);
 	terrainVAO = terrain.getVAO();
 
-	
+	glm::vec4 skyColour = glm::vec4(0.53, 0.81, 0.92, 1.0);
 
+	glClearColor(skyColour.r, skyColour.g, skyColour.b, skyColour.a);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -111,15 +114,19 @@ int main()
 		shader.setMat4("view", view);
 		shader.setMat4("model", model);
 		shader.setVec3("viewPos", camera.Position);
+		shader.setVec4("skyColour", skyColour);
 
 		// textures
 		shader.setInt("heightMap", 0);
 		shader.setInt("rockTexture", 1);
+		shader.setInt("mossTexture", 2);
 
 		// flags
 		shader.setBool("stepTessOn", stepTessOn);
 		shader.setBool("linearTessOn", linearTessOn);
 		shader.setBool("expoTessOn", expoTessOn);
+
+		shader.setFloat("scale", 50.f);
 	
 		glBindVertexArray(terrainVAO);
 
@@ -128,6 +135,12 @@ int main()
 
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, rockTexture);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, mossTexture);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, snowTexture);
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());

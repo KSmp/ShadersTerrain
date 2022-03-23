@@ -3,6 +3,7 @@
 in vec3 normES;
 in vec3 posES;
 in vec2 texCoordsES;
+in float visibility;
 
 out vec4 FragColor;
 
@@ -15,32 +16,51 @@ float specularStrength = 0.4;
 float shine = 128;
 
 uniform sampler2D rockTexture;
+uniform sampler2D mossTexture;
+uniform sampler2D snowTexture;
+
+uniform float scale;
+uniform vec4 skyColour;
 
 void getObjCol();
 vec3 getDirectionalLight(vec3 norm);
+vec4 triPlaner();
 
 void main()
 {   
     getObjCol();
     FragColor = vec4(getDirectionalLight(normES), 1.0);
+    FragColor = mix(skyColour, FragColor, visibility);
+}
+
+vec4 triPlaner(sampler2D textureToSample) {
+    vec3 blendPercent = normalize(abs(normES));
+    float blendSum = (blendPercent.x + blendPercent.y + blendPercent.z);
+    blendPercent = blendPercent/vec3(blendSum);
+
+    vec4 xaxis = texture(textureToSample, posES.yz);
+    vec4 yaxis = texture(textureToSample, posES.xz);
+    vec4 zaxis = texture(textureToSample, posES.xy);
+
+    return xaxis * blendPercent.x + yaxis * blendPercent.y + zaxis * blendPercent.z;
 }
 
 void getObjCol() {
-    float scale = 10.0;
     float height = posES.y/scale;
     vec3 green = vec3(0.3, 0.35, 0.15);
     vec3 gray = vec3(0.5, 0.4, 0.5);
     vec3 white = vec3(1.0);
-    vec3 rock = texture(rockTexture, (texCoordsES * 5.0)).xyz;
+    vec3 rock = triPlaner(rockTexture).rgb;
+    vec3 moss = triPlaner(mossTexture).rgb;
 
-    objCol = green;
+    objCol = moss;
 
-    if (height > 4.0) {
+    if (height > 0.9) {
         objCol = white;
-    } else if (height > 3.5) {
-        objCol = mix(rock, white, smoothstep(3.5, 4.2, height));
-    } else if (height > 1.3) {
-        objCol = mix(green, rock, smoothstep(1.3, 2.0, height));
+    } else if (height > 0.6) {
+        objCol = mix(rock, white, smoothstep(0.7, 0.9, height));
+    } else if (height > 0.3) {
+        objCol = mix(moss, rock, smoothstep(0.3, 0.4, height));
     }
 }
 

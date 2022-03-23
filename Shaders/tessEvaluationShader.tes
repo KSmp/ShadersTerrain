@@ -15,6 +15,8 @@ uniform mat4 view;
 uniform mat4 projection;
 
 uniform sampler2D heightMap;
+uniform float scale;
+uniform vec3 viewPos;
 
 // read in vector arrays from previous shader
 in vec3 posTC[] ;
@@ -25,11 +27,11 @@ in vec2 texCoordsTC[];
 out vec3 normES ;
 out vec3 posES ;
 out vec2 texCoordsES;
+out float visibility;
 
 
 void main()
 {
-    float scale = 50.f;
 
     // interpolate the normal and xyz position using the linear interpolation function
     // use 3D because they are in three dimensions; 2D also included for uv texture coordinates
@@ -50,6 +52,12 @@ void main()
    float ud = up - down;
 
    normES = normalize(vec3(lr, 2.0, ud));
+
+   // fog
+
+   float distanceFromCamera = distance(viewPos, posES);
+   visibility = exp(-pow((distanceFromCamera * 0.004), 1.2));
+   visibility = clamp(visibility, 0.0, 1.0);
 
    // transform vertex to clip space  - NOTE: WE NEED TO DO IT HERE NOW and not in vertex shader
    gl_Position = projection * view * model * vec4(posES, 1.0);

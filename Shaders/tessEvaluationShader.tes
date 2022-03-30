@@ -7,6 +7,9 @@ layout(triangles, equal_spacing, ccw) in;
 vec2 interpolate2D(vec2 v0, vec2 v1, vec2 v2) ;
 vec3 interpolate3D(vec3 v0, vec3 v1, vec3 v2) ;
 
+float hash(float n);
+float snoise(vec3 x);
+float noise(vec3 position, int octaves);
 
 // unifrom matrices to perform transformations
 // previously this would have been done in vertex shader
@@ -41,7 +44,8 @@ void main()
    texCoordsES = interpolate2D(texCoordsTC[0], texCoordsTC[1], texCoordsTC[2]);
 
    float height = texture(heightMap, texCoordsES).x;
-   posES.y = height * scale;
+   //posES.y = height * scale;
+   posES.y = noise(posES, 100);
 
    float right = (textureOffset(heightMap, texCoordsES, ivec2(1, 0)).x) * scale;
    float left = (textureOffset(heightMap, texCoordsES, ivec2(-1, 0)).x) * scale;
@@ -75,3 +79,35 @@ vec3 interpolate3D(vec3 v0, vec3 v1, vec3 v2)
    	return vec3(gl_TessCoord.x) * v0 + vec3(gl_TessCoord.y) * v1 + vec3(gl_TessCoord.z) * v2;
 }
 
+float hash(float n) {
+    return fract(sin(n) * 753.5453123);
+}
+
+float snoise(vec3 x)
+{
+	vec3 p = floor(x);
+	vec3 f = fract(x);
+	f = f * f * (3.0f - (2.0f * f));
+
+	float n = p.x + p.y * 157.0f + 113.0f * p.z;
+	return mix(mix(mix(hash(n + 0.0f), hash(n + 1.0f), f.x),
+		mix(hash(n + 157.0f), hash(n + 158.0f), f.x), f.y),
+		mix(mix(hash(n + 113.0f), hash(n + 114.0f), f.x),
+			mix(hash(n + 270.0f), hash(n + 271.0f), f.x), f.y), f.z);
+}
+
+float noise(vec3 position, int octaves) {
+	float total = 0.f;
+	float frequency = 0.005;
+	float maxAmplitude = 0.f;
+	float amplitude = 100.f;
+
+	for (int i = 0; i < octaves; i++) {
+		total += snoise(position * frequency) * amplitude;
+		frequency *= 2.f;
+		amplitude /= 2.f;
+		maxAmplitude += amplitude;
+	}
+
+	return (total / maxAmplitude) * scale;
+}

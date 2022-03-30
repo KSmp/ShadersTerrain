@@ -93,10 +93,9 @@ void Terrain::makeVertices(std::vector<float> *vertices) {
 }
 
 void Terrain::makeVertex(int x, int y, std::vector<float> *vertices) {
-
 	//x y z position
 	vertices->push_back((float)x); //xPos
-	vertices->push_back(0.0f); //yPos - always 0 for now. Going to calculate this on GPU - can change to calclaute it here.
+	vertices->push_back(0.f); //yPos - always 0 for now. Going to calculate this on GPU - can change to calclaute it here.
 	vertices->push_back((float)y); //zPos
 
    // add texture coords

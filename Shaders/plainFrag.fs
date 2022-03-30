@@ -49,18 +49,18 @@ void getObjCol() {
     float height = posES.y/scale;
     vec3 green = vec3(0.3, 0.35, 0.15);
     vec3 gray = vec3(0.5, 0.4, 0.5);
-    vec3 white = vec3(1.0);
+    vec3 white = vec3(1.0, 0.5, 0.5);
     vec3 rock = triPlanar(rockTexture, 0.05).rgb;
     vec3 moss = triPlanar(mossTexture, 0.1).rgb;
 
-    objCol = moss;
+    objCol = green;
 
     if (height > 0.9) {
         objCol = white;
     } else if (height > 0.6) {
-        objCol = mix(rock, white, smoothstep(0.7, 0.9, height));
+        objCol = mix(gray, white, smoothstep(0.7, 0.9, height));
     } else if (height > 0.3) {
-        objCol = mix(moss, rock, smoothstep(0.3, 0.4, height));
+        objCol = mix(green, gray, smoothstep(0.3, 0.4, height));
     }
 }
 

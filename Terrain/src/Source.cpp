@@ -126,7 +126,7 @@ int main()
 		shader.setBool("linearTessOn", linearTessOn);
 		shader.setBool("expoTessOn", expoTessOn);
 
-		shader.setFloat("scale", 50.f);
+		shader.setFloat("scale", 100.f);
 	
 		glBindVertexArray(terrainVAO);
 

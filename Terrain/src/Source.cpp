@@ -32,6 +32,8 @@ void processInput(GLFWwindow *window);
 unsigned int loadTexture(char const * path);
 //unsigned int loadTexture2(char const * path);
 void setVAO(vector <float> vertices);
+void setFBOcolour();
+unsigned int createQuad();
 
 // camera
 Camera camera(glm::vec3(260,50,300));
@@ -41,6 +43,10 @@ bool firstMouse = true;
 
 //arrays
 unsigned int terrainVAO;
+unsigned int waterVAO;
+
+unsigned int myFBO;
+unsigned int colourAttachment;
 
 // timing
 float deltaTime = 0.0f;
@@ -76,12 +82,14 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
-	glEnable(GL_DEPTH_TEST);
+
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
 	// simple vertex and fragment shader - add your own tess and geo shader
 	Shader shader("..\\shaders\\plainVert.vs", "..\\shaders\\plainFrag.fs", "..\\shaders\\tessControlShader.tcs", "..\\shaders\\tessEvaluationShader.tes");
+	Shader waterShader("..\\shaders\\waterVert.vs", "..\\shaders\\waterFrag.fs");
+	Shader fboShader("..\\shaders\\fboVert.vs", "..\\shaders\\fboFrag.fs");
 
 	unsigned int heightMap = loadTexture("..\\resources\\heightMap.jpg");
 	unsigned int rockTexture = loadTexture("..\\resources\\rock\\diffuse.jpg");
@@ -89,12 +97,17 @@ int main()
 	unsigned int snowTexture = loadTexture("..\\resources\\snow\\diffuse.jpg");
 
 	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
-	Terrain terrain(50, 50,10);
+	Terrain terrain(50, 50, 10);
 	terrainVAO = terrain.getVAO();
+
+	Terrain water(50, 50, 10);
+	waterVAO = water.getVAO();
 
 	glm::vec4 skyColour = glm::vec4(0.53, 0.81, 0.92, 1.0);
 
 	glClearColor(skyColour.r, skyColour.g, skyColour.b, skyColour.a);
+
+	setFBOcolour();
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -104,7 +117,9 @@ int main()
 		lastFrame = currentFrame;
 		processInput(window);
 
+		glBindFramebuffer(GL_FRAMEBUFFER, myFBO);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
 		
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1200.0f);
 		glm::mat4 view = camera.GetViewMatrix();
@@ -126,7 +141,7 @@ int main()
 		shader.setBool("linearTessOn", linearTessOn);
 		shader.setBool("expoTessOn", expoTessOn);
 
-		shader.setFloat("scale", 100.f);
+		shader.setFloat("scale", 75.f);
 	
 		glBindVertexArray(terrainVAO);
 
@@ -144,7 +159,25 @@ int main()
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
+
+		waterShader.use();
+		waterShader.setMat4("projection", projection);
+		waterShader.setMat4("view", view);
+		glBindVertexArray(waterVAO);
+		glDrawArrays(GL_TRIANGLES, 0, water.getSize());
 		//glDrawElements(GL_PATCHES, terrain.getSize(), GL_UNSIGNED_INT, 0);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST);
+
+		fboShader.use();
+		fboShader.setInt("screen", 3);
+
+		glBindVertexArray(createQuad());
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, colourAttachment);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -280,6 +313,44 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		std::cout << "EXPO TESS toggled! " << expoTessOn << std::endl;
 	}
 }
+
+void setFBOcolour() {
+	glGenFramebuffers(1, &myFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, myFBO);
+	glGenTextures(1, &colourAttachment);
+	glBindTexture(GL_TEXTURE_2D, colourAttachment);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourAttachment, 0);
+}
+
+unsigned int createQuad() {
+	unsigned int quadVAO;
+	unsigned int quadVBO;
+
+	float quadVerticies[] = {
+		//pos			  // texture coords
+		-1.f, 1.f, 0.f,   0.f,1.f,
+		-1.f, -1.f, 0.f,  0.f,0.f,
+		 1.f, 1.f, 0.f,   1.f,1.f,
+		 1.f, -1.f, 0.f,  1.f,0.f
+	};
+
+	glGenVertexArrays(1, &quadVAO);
+	glGenBuffers(1, &quadVBO);
+	glBindVertexArray(quadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerticies), &quadVerticies, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+	return quadVAO;
+}
+
 
 
 

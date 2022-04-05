@@ -49,7 +49,7 @@ void getObjCol() {
     float height = posES.y/scale;
     vec3 green = vec3(0.3, 0.35, 0.15);
     vec3 gray = vec3(0.5, 0.4, 0.5);
-    vec3 white = vec3(1.0, 0.5, 0.5);
+    vec3 white = vec3(1.0, 1.0, 1.0);
     vec3 rock = triPlanar(rockTexture, 0.05).rgb;
     vec3 moss = triPlanar(mossTexture, 0.1).rgb;
 

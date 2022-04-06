@@ -12,8 +12,9 @@
 
 #include <Model.h>
 #include "Terrain.h"
+#include "FrameBuffer.h"
 
-#include<string>
+#include <string>
 #include <iostream>
 #include <numeric>
 
@@ -22,7 +23,6 @@
 // settings
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 900;
-
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -44,9 +44,6 @@ bool firstMouse = true;
 //arrays
 unsigned int terrainVAO;
 unsigned int waterVAO;
-
-unsigned int myFBO;
-unsigned int colourAttachment;
 
 // timing
 float deltaTime = 0.0f;
@@ -94,7 +91,6 @@ int main()
 	unsigned int heightMap = loadTexture("..\\resources\\heightMap.jpg");
 	unsigned int rockTexture = loadTexture("..\\resources\\rock\\diffuse.jpg");
 	unsigned int mossTexture = loadTexture("..\\resources\\moss\\diffuse.jpg");
-	unsigned int snowTexture = loadTexture("..\\resources\\snow\\diffuse.jpg");
 
 	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
 	Terrain terrain(50, 50, 10);
@@ -106,8 +102,10 @@ int main()
 	glm::vec4 skyColour = glm::vec4(0.53, 0.81, 0.92, 1.0);
 
 	glClearColor(skyColour.r, skyColour.g, skyColour.b, skyColour.a);
+	glEnable(GL_CLIP_DISTANCE0);
 
-	setFBOcolour();
+	FrameBuffer refraction(50, 50);
+	FrameBuffer reflection(50, 50);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -117,7 +115,7 @@ int main()
 		lastFrame = currentFrame;
 		processInput(window);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, myFBO);
+		glBindFramebuffer(GL_FRAMEBUFFER, refraction.getBuffer());
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		
@@ -141,7 +139,9 @@ int main()
 		shader.setBool("linearTessOn", linearTessOn);
 		shader.setBool("expoTessOn", expoTessOn);
 
+
 		shader.setFloat("scale", 75.f);
+		shader.setVec4("plane", glm::vec4(0.0, -1.0, 0.0, 0.0));
 	
 		glBindVertexArray(terrainVAO);
 
@@ -153,9 +153,6 @@ int main()
 
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, mossTexture);
-
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, snowTexture);
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
@@ -170,14 +167,14 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);
 
-		fboShader.use();
-		fboShader.setInt("screen", 3);
+		//fboShader.use();
+		//fboShader.setInt("screen", 4);
 
-		glBindVertexArray(createQuad());
+		//glBindVertexArray(createQuad());
 
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, colourAttachment);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		//glActiveTexture(GL_TEXTURE4);
+		//glBindTexture(GL_TEXTURE_2D, colourAttachment);
+		//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -233,9 +230,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
-
-
-
 
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
@@ -312,18 +306,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		expoTessOn = !expoTessOn;
 		std::cout << "EXPO TESS toggled! " << expoTessOn << std::endl;
 	}
-}
-
-void setFBOcolour() {
-	glGenFramebuffers(1, &myFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, myFBO);
-	glGenTextures(1, &colourAttachment);
-	glBindTexture(GL_TEXTURE_2D, colourAttachment);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourAttachment, 0);
 }
 
 unsigned int createQuad() {

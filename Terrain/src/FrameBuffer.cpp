@@ -21,5 +21,9 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height) {
 }
 
 unsigned int FrameBuffer::getBuffer() {
+	return FBO;
+}
+
+unsigned int FrameBuffer::getTexture() {
 	return colourAttachment;
 }

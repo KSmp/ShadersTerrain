@@ -29,10 +29,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processInput(GLFWwindow *window);
+void reverseCamera();
 unsigned int loadTexture(char const * path);
 //unsigned int loadTexture2(char const * path);
-void setVAO(vector <float> vertices);
-void setFBOcolour();
 unsigned int createQuad();
 
 // camera
@@ -104,8 +103,8 @@ int main()
 	glClearColor(skyColour.r, skyColour.g, skyColour.b, skyColour.a);
 	glEnable(GL_CLIP_DISTANCE0);
 
-	FrameBuffer refraction(50, 50);
-	FrameBuffer reflection(50, 50);
+	FrameBuffer refraction(SCR_WIDTH, SCR_HEIGHT);
+	FrameBuffer reflection(SCR_WIDTH, SCR_HEIGHT);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -157,9 +156,30 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
+		glBindFramebuffer(GL_FRAMEBUFFER, reflection.getBuffer());
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		reverseCamera();
+		shader.setVec4("plane", glm::vec4(0.0, 1.0, 0.0, 0.0));
+		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		reverseCamera();
+		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
+
 		waterShader.use();
 		waterShader.setMat4("projection", projection);
 		waterShader.setMat4("view", view);
+		waterShader.setInt("refraction", 4);
+		waterShader.setInt("reflection", 5);
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, refraction.getTexture());
+
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, reflection.getTexture());
+
 		glBindVertexArray(waterVAO);
 		glDrawArrays(GL_TRIANGLES, 0, water.getSize());
 		//glDrawElements(GL_PATCHES, terrain.getSize(), GL_UNSIGNED_INT, 0);
@@ -334,5 +354,8 @@ unsigned int createQuad() {
 }
 
 
-
+void reverseCamera() {
+	camera.Position.y = -camera.Position.y;
+	camera.Pitch *= -1;
+}
 

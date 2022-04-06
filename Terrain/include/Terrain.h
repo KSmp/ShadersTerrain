@@ -12,7 +12,7 @@
 class Terrain
 {
 public:
-	Terrain(int widthIn, int heightIn, int stepSizeIn);
+	Terrain(int widthIn, int heightIn, int stepSizeIn, float levelIn);
 	Terrain();
 	unsigned int getVAO();
 	int getSize();
@@ -23,6 +23,7 @@ private:
 	unsigned int VAO, VBO;
 	int width;
 	int height;
+	float level;
 	int stepSize;
 	void makeVertices(std::vector<float> *vertices);
 	void makeVertex(int x, int y, std::vector<float> *vertices);

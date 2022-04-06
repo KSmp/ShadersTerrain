@@ -46,7 +46,7 @@ void main()
 
    float height = texture(heightMap, texCoordsES).x;
    //posES.y = height * scale;
-   posES.y = noise(posES, 100) - 70;
+   posES.y = noise(posES, 100) - 50.f;
 
    float right = (textureOffset(heightMap, texCoordsES, ivec2(1, 0)).x) * scale;
    float left = (textureOffset(heightMap, texCoordsES, ivec2(-1, 0)).x) * scale;

@@ -92,10 +92,11 @@ int main()
 	unsigned int mossTexture = loadTexture("..\\resources\\moss\\diffuse.jpg");
 
 	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
-	Terrain terrain(50, 50, 10);
+	Terrain terrain(50, 50, 10, 0.f);
 	terrainVAO = terrain.getVAO();
 
-	Terrain water(50, 50, 10);
+	float waterLevel = 0.f;
+	Terrain water(50, 50, 10, waterLevel);
 	waterVAO = water.getVAO();
 
 	glm::vec4 skyColour = glm::vec4(0.53, 0.81, 0.92, 1.0);
@@ -114,6 +115,7 @@ int main()
 		lastFrame = currentFrame;
 		processInput(window);
 
+		// REFRACTION
 		glBindFramebuffer(GL_FRAMEBUFFER, refraction.getBuffer());
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
@@ -140,7 +142,7 @@ int main()
 
 
 		shader.setFloat("scale", 75.f);
-		shader.setVec4("plane", glm::vec4(0.0, -1.0, 0.0, 0.0));
+		shader.setVec4("plane", glm::vec4(0.0, -1.0, 0.0, waterLevel));
 	
 		glBindVertexArray(terrainVAO);
 
@@ -156,28 +158,57 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
-		glBindFramebuffer(GL_FRAMEBUFFER, reflection.getBuffer());
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// REFLECTION
+
+		float distanceFromWater = camera.Position.y - waterLevel;
+
+		camera.Position.y = camera.Position.y - (2 * distanceFromWater);
 		reverseCamera();
 		shader.setVec4("plane", glm::vec4(0.0, 1.0, 0.0, 0.0));
+
+		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1200.0f);
+		view = camera.GetViewMatrix();
+		model = glm::mat4(1.0f);
+		shader.setMat4("projection", projection);
+		shader.setMat4("view", view);
+		shader.setMat4("model", model);
+		shader.setVec3("viewPos", camera.Position);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, reflection.getBuffer());
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
+
+		// TERRAIN AND WATER
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		camera.Position.y = camera.Position.y + (2 * distanceFromWater);
 		reverseCamera();
+		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1200.0f);
+		view = camera.GetViewMatrix();
+		model = glm::mat4(1.0f);
+		shader.setMat4("projection", projection);
+		shader.setMat4("view", view);
+		shader.setMat4("model", model);
+		shader.setVec3("viewPos", camera.Position);
+
+
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
 		waterShader.use();
 		waterShader.setMat4("projection", projection);
 		waterShader.setMat4("view", view);
-		waterShader.setInt("refraction", 4);
-		waterShader.setInt("reflection", 5);
+		waterShader.setInt("refraction", 3);
+		waterShader.setInt("reflection", 4);
+		waterShader.setInt("screenW", SCR_WIDTH);
+		waterShader.setInt("screenH", SCR_HEIGHT);
 
-		glActiveTexture(GL_TEXTURE4);
+		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, refraction.getTexture());
 
-		glActiveTexture(GL_TEXTURE5);
+		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, reflection.getTexture());
 
 		glBindVertexArray(waterVAO);
@@ -355,7 +386,6 @@ unsigned int createQuad() {
 
 
 void reverseCamera() {
-	camera.Position.y = -camera.Position.y;
 	camera.Pitch *= -1;
 }
 

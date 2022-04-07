@@ -86,3 +86,10 @@ void Camera::ProcessMouseScroll(float yoffset)
 		Zoom = 45.0f;
 }
 
+void Camera::invertPitch()
+{
+	Pitch = -Pitch;
+
+	updateCameraVectors();
+}
+

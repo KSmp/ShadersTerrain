@@ -21,6 +21,7 @@ uniform sampler2D snowTexture;
 
 uniform float scale;
 uniform vec4 skyColour;
+uniform float waterLevel;
 
 void getObjCol();
 vec3 getDirectionalLight(vec3 norm);
@@ -62,6 +63,10 @@ void getObjCol() {
     } else if (height > 0.3) {
         objCol = mix(green, gray, smoothstep(0.3, 0.4, height));
     }
+
+    if (posES.y < waterLevel) {
+        objCol = vec3(0.761, 0.698, 0.52);
+    } 
 }
 
 vec3 getDirectionalLight(vec3 norm) {

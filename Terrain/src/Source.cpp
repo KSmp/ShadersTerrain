@@ -29,7 +29,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processInput(GLFWwindow *window);
-void reverseCamera();
+void updateMVP(Shader shader);
 unsigned int loadTexture(char const * path);
 //unsigned int loadTexture2(char const * path);
 unsigned int createQuad();
@@ -102,10 +102,11 @@ int main()
 	glm::vec4 skyColour = glm::vec4(0.53, 0.81, 0.92, 1.0);
 
 	glClearColor(skyColour.r, skyColour.g, skyColour.b, skyColour.a);
-	glEnable(GL_CLIP_DISTANCE0);
 
 	FrameBuffer refraction(SCR_WIDTH, SCR_HEIGHT);
 	FrameBuffer reflection(SCR_WIDTH, SCR_HEIGHT);
+
+	glEnable(GL_DEPTH_TEST);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -114,21 +115,20 @@ int main()
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 		processInput(window);
+		
+		//camera.Position = glm::vec3(0.0);
+		//std::cout << camera.Position.x <<  " " << camera.Position.y << " " << camera.Position.z << std::endl;
 
 		// REFRACTION
 		glBindFramebuffer(GL_FRAMEBUFFER, refraction.getBuffer());
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CLIP_DISTANCE0);
 		
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1200.0f);
-		glm::mat4 view = camera.GetViewMatrix();
-		glm::mat4 model = glm::mat4(1.0f);
 	    shader.use();
-	    shader.setMat4("projection", projection);
-		shader.setMat4("view", view);
-		shader.setMat4("model", model);
+		updateMVP(shader);
 		shader.setVec3("viewPos", camera.Position);
 		shader.setVec4("skyColour", skyColour);
+		shader.setFloat("waterLevel", waterLevel);
 
 		// textures
 		shader.setInt("heightMap", 0);
@@ -161,45 +161,35 @@ int main()
 
 		// REFLECTION
 
-		float distanceFromWater = camera.Position.y - waterLevel;
-
-		camera.Position.y = camera.Position.y - (2 * distanceFromWater);
-		reverseCamera();
+		float distance = 2 * (camera.Position.y - waterLevel);
+		std::cout << distance << std::endl;
+		camera.Position.y -= distance;
+		camera.invertPitch();
 		shader.setVec4("plane", glm::vec4(0.0, 1.0, 0.0, 0.0));
 
-		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1200.0f);
-		view = camera.GetViewMatrix();
-		model = glm::mat4(1.0f);
-		shader.setMat4("projection", projection);
-		shader.setMat4("view", view);
-		shader.setMat4("model", model);
-		shader.setVec3("viewPos", camera.Position);
+		updateMVP(shader);
+		//shader.setVec3("viewPos", camera.Position);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, reflection.getBuffer());
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
+		camera.Position.y += distance;
+		camera.invertPitch();
 
 		// TERRAIN AND WATER
 
+		glDisable(GL_CLIP_DISTANCE0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		camera.Position.y = camera.Position.y + (2 * distanceFromWater);
-		reverseCamera();
-		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1200.0f);
-		view = camera.GetViewMatrix();
-		model = glm::mat4(1.0f);
-		shader.setMat4("projection", projection);
-		shader.setMat4("view", view);
-		shader.setMat4("model", model);
-		shader.setVec3("viewPos", camera.Position);
+		updateMVP(shader);
+		//shader.setVec3("viewPos", camera.Position);
 
 
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
 		waterShader.use();
-		waterShader.setMat4("projection", projection);
-		waterShader.setMat4("view", view);
+		updateMVP(waterShader);
 		waterShader.setInt("refraction", 3);
 		waterShader.setInt("reflection", 4);
 		waterShader.setInt("screenW", SCR_WIDTH);
@@ -216,7 +206,6 @@ int main()
 		//glDrawElements(GL_PATCHES, terrain.getSize(), GL_UNSIGNED_INT, 0);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST);
 
 		//fboShader.use();
 		//fboShader.setInt("screen", 4);
@@ -385,7 +374,13 @@ unsigned int createQuad() {
 }
 
 
-void reverseCamera() {
-	camera.Pitch *= -1;
+void updateMVP(Shader shader) {
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1200.0f);
+	glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 model = glm::mat4(1.0f);
+
+	shader.setMat4("projection", projection);
+	shader.setMat4("view", view);
+	shader.setMat4("model", model);
 }
 

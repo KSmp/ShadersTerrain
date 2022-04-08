@@ -85,7 +85,7 @@ vec3 getDirectionalLight(vec3 norm) {
     // vec3 viewDir = normalize(viewPos - posWS);
 
     // Blinn Phong
-    // vec3 halfway = normalize(-lightDir + viewDir);
+    // vec3 halfway = normalize(lightDir + viewDir);
     // float specularFactor = dot(halfway, norm);
     // specularFactor = max(specularFactor, 0.0);
     // specularFactor = pow(specularFactor, shine);

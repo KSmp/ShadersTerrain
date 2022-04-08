@@ -27,3 +27,7 @@ unsigned int FrameBuffer::getBuffer() {
 unsigned int FrameBuffer::getTexture() {
 	return colourAttachment;
 }
+
+unsigned int FrameBuffer::getDepthMap() {
+	return depthAttachment;
+}

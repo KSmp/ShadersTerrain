@@ -13,5 +13,6 @@ public:
 	FrameBuffer(unsigned int width, unsigned int height);
 	unsigned int getBuffer();
 	unsigned int getTexture();
+	unsigned int getDepthMap();
 };
 

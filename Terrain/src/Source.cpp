@@ -23,6 +23,8 @@
 // settings
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 900;
+const float NEAR_PLANE = 0.1f;
+const float FAR_PLANE = 1200.0f;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -31,8 +33,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void processInput(GLFWwindow *window);
 void updateMVP(Shader shader);
 unsigned int loadTexture(char const * path);
-//unsigned int loadTexture2(char const * path);
-unsigned int createQuad();
+//unsigned int createQuad();
 
 // camera
 Camera camera(glm::vec3(260,50,300));
@@ -85,17 +86,18 @@ int main()
 	// simple vertex and fragment shader - add your own tess and geo shader
 	Shader shader("..\\shaders\\plainVert.vs", "..\\shaders\\plainFrag.fs", "..\\shaders\\tessControlShader.tcs", "..\\shaders\\tessEvaluationShader.tes");
 	Shader waterShader("..\\shaders\\waterVert.vs", "..\\shaders\\waterFrag.fs");
-	Shader fboShader("..\\shaders\\fboVert.vs", "..\\shaders\\fboFrag.fs");
 
 	unsigned int heightMap = loadTexture("..\\resources\\heightMap.jpg");
 	unsigned int rockTexture = loadTexture("..\\resources\\rock\\diffuse.jpg");
 	unsigned int mossTexture = loadTexture("..\\resources\\moss\\diffuse.jpg");
+	unsigned int dudv = loadTexture("..\\resources\\waterDUDV.png");
+	unsigned int waterNormals = loadTexture("..\\resources\\waterNormals.png");
 
-	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
+	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize, y position
 	Terrain terrain(50, 50, 10, 0.f);
 	terrainVAO = terrain.getVAO();
 
-	float waterLevel = 0.f;
+	float waterLevel = 50.f;
 	Terrain water(50, 50, 10, waterLevel);
 	waterVAO = water.getVAO();
 
@@ -107,22 +109,20 @@ int main()
 	FrameBuffer reflection(SCR_WIDTH, SCR_HEIGHT);
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	while (!glfwWindowShouldClose(window))
 	{
-
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 		processInput(window);
-		
-		//camera.Position = glm::vec3(0.0);
-		//std::cout << camera.Position.x <<  " " << camera.Position.y << " " << camera.Position.z << std::endl;
 
 		// REFRACTION
+		glEnable(GL_CLIP_DISTANCE0);
 		glBindFramebuffer(GL_FRAMEBUFFER, refraction.getBuffer());
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_CLIP_DISTANCE0);
 		
 	    shader.use();
 		updateMVP(shader);
@@ -158,17 +158,15 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
-
 		// REFLECTION
 
 		float distance = 2 * (camera.Position.y - waterLevel);
-		std::cout << distance << std::endl;
+		//std::cout << distance << std::endl;
 		camera.Position.y -= distance;
 		camera.invertPitch();
-		shader.setVec4("plane", glm::vec4(0.0, 1.0, 0.0, 0.0));
+		shader.setVec4("plane", glm::vec4(0.0, 1.0, 0.0, -waterLevel));
 
 		updateMVP(shader);
-		//shader.setVec3("viewPos", camera.Position);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, reflection.getBuffer());
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -183,23 +181,35 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		updateMVP(shader);
-		//shader.setVec3("viewPos", camera.Position);
-
-
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
 		waterShader.use();
 		updateMVP(waterShader);
 		waterShader.setInt("refraction", 3);
 		waterShader.setInt("reflection", 4);
+		waterShader.setInt("dudv", 5);
+		waterShader.setInt("waterNormals", 6);
+		waterShader.setInt("depthMap", 7);
 		waterShader.setInt("screenW", SCR_WIDTH);
 		waterShader.setInt("screenH", SCR_HEIGHT);
+		waterShader.setFloat("time", currentFrame);
+		waterShader.setFloat("near", NEAR_PLANE);
+		waterShader.setFloat("far", FAR_PLANE);
 
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, refraction.getTexture());
 
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, reflection.getTexture());
+		
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, dudv);
+
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_2D, waterNormals);
+
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D, refraction.getDepthMap());
 
 		glBindVertexArray(waterVAO);
 		glDrawArrays(GL_TRIANGLES, 0, water.getSize());
@@ -348,39 +358,40 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 }
 
-unsigned int createQuad() {
-	unsigned int quadVAO;
-	unsigned int quadVBO;
-
-	float quadVerticies[] = {
-		//pos			  // texture coords
-		-1.f, 1.f, 0.f,   0.f,1.f,
-		-1.f, -1.f, 0.f,  0.f,0.f,
-		 1.f, 1.f, 0.f,   1.f,1.f,
-		 1.f, -1.f, 0.f,  1.f,0.f
-	};
-
-	glGenVertexArrays(1, &quadVAO);
-	glGenBuffers(1, &quadVBO);
-	glBindVertexArray(quadVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerticies), &quadVerticies, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-
-	return quadVAO;
-}
+//unsigned int createQuad() {
+//	unsigned int quadVAO;
+//	unsigned int quadVBO;
+//
+//	float quadVerticies[] = {
+//		//pos			  // texture coords
+//		-1.f, 1.f, 0.f,   0.f,1.f,
+//		-1.f, -1.f, 0.f,  0.f,0.f,
+//		 1.f, 1.f, 0.f,   1.f,1.f,
+//		 1.f, -1.f, 0.f,  1.f,0.f
+//	};
+//
+//	glGenVertexArrays(1, &quadVAO);
+//	glGenBuffers(1, &quadVBO);
+//	glBindVertexArray(quadVAO);
+//	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+//	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerticies), &quadVerticies, GL_STATIC_DRAW);
+//	glEnableVertexAttribArray(0);
+//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+//	glEnableVertexAttribArray(1);
+//	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+//
+//	return quadVAO;
+//}
 
 
 void updateMVP(Shader shader) {
-	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1200.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
 	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 model = glm::mat4(1.0f);
 
 	shader.setMat4("projection", projection);
 	shader.setMat4("view", view);
 	shader.setMat4("model", model);
+	shader.setVec3("viewPos", camera.Position);
 }
 

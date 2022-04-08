@@ -36,7 +36,7 @@ unsigned int loadTexture(char const * path);
 //unsigned int createQuad();
 
 // camera
-Camera camera(glm::vec3(260,50,300));
+Camera camera(glm::vec3(75,74,574));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -49,10 +49,6 @@ unsigned int waterVAO;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-// flags
-bool stepTessOn = true;
-bool linearTessOn = false;
-bool expoTessOn = false;
 
 int main()
 {
@@ -84,7 +80,7 @@ int main()
 	glCullFace(GL_BACK);
 
 	// simple vertex and fragment shader - add your own tess and geo shader
-	Shader shader("..\\shaders\\plainVert.vs", "..\\shaders\\plainFrag.fs", "..\\shaders\\tessControlShader.tcs", "..\\shaders\\tessEvaluationShader.tes");
+	Shader shader("..\\shaders\\plainVert.vs", "..\\shaders\\plainFrag.fs", "..\\shaders\\tessControlShader.tcs", "..\\shaders\\tessEvaluationShader.tes", "..\\shaders\\flatNanoGeo.gs");
 	Shader waterShader("..\\shaders\\waterVert.vs", "..\\shaders\\waterFrag.fs");
 
 	unsigned int heightMap = loadTexture("..\\resources\\heightMap.jpg");
@@ -119,6 +115,8 @@ int main()
 		lastFrame = currentFrame;
 		processInput(window);
 
+		//std::cout << camera.Position.x << " "  << camera.Position.y << " " << camera.Position.z << std::endl;
+
 		// REFRACTION
 		glEnable(GL_CLIP_DISTANCE0);
 		glBindFramebuffer(GL_FRAMEBUFFER, refraction.getBuffer());
@@ -134,12 +132,6 @@ int main()
 		shader.setInt("heightMap", 0);
 		shader.setInt("rockTexture", 1);
 		shader.setInt("mossTexture", 2);
-
-		// flags
-		shader.setBool("stepTessOn", stepTessOn);
-		shader.setBool("linearTessOn", linearTessOn);
-		shader.setBool("expoTessOn", expoTessOn);
-
 
 		shader.setFloat("scale", 75.f);
 		shader.setVec4("plane", glm::vec4(0.0, -1.0, 0.0, waterLevel));
@@ -330,32 +322,32 @@ unsigned int loadTexture(char const * path)
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-	{
-		linearTessOn = false;
-		expoTessOn = false;
+	//if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+	//{
+	//	linearTessOn = false;
+	//	expoTessOn = false;
 
-		stepTessOn = !stepTessOn;
-		std::cout << "STEP TESS toggled! " << stepTessOn << std::endl;
-	}
+	//	stepTessOn = !stepTessOn;
+	//	std::cout << "STEP TESS toggled! " << stepTessOn << std::endl;
+	//}
 
-	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-	{
-		stepTessOn = false;
-		expoTessOn = false;
+	//if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+	//{
+	//	stepTessOn = false;
+	//	expoTessOn = false;
 
-		linearTessOn = !linearTessOn;
-		std::cout << "LINEAR TESS toggled! " << linearTessOn << std::endl;
-	}
+	//	linearTessOn = !linearTessOn;
+	//	std::cout << "LINEAR TESS toggled! " << linearTessOn << std::endl;
+	//}
 
-	if (glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-	{
-		stepTessOn = false;
-		linearTessOn = false;
+	//if (glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+	//{
+	//	stepTessOn = false;
+	//	linearTessOn = false;
 
-		expoTessOn = !expoTessOn;
-		std::cout << "EXPO TESS toggled! " << expoTessOn << std::endl;
-	}
+	//	expoTessOn = !expoTessOn;
+	//	std::cout << "EXPO TESS toggled! " << expoTessOn << std::endl;
+	//}
 }
 
 //unsigned int createQuad() {

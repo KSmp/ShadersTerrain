@@ -1,9 +1,9 @@
 #version 410 core
 
-in vec3 normES;
-in vec3 posES;
-in vec2 texCoordsES;
-in float visibility;
+in vec3 normG;
+in vec3 posG;
+in vec2 texCoordsG;
+in float visibilityG;
 
 out vec4 FragColor;
 
@@ -30,24 +30,24 @@ vec4 triPlanar();
 void main()
 {   
     getObjCol();
-    FragColor = vec4(getDirectionalLight(normES), 1.0);
-    FragColor = mix(skyColour, FragColor, visibility);
+    FragColor = vec4(getDirectionalLight(normG), 1.0);
+    FragColor = mix(skyColour, FragColor, visibilityG);
 }
 
 vec4 triPlanar(sampler2D textureToSample, float scale = 1.0) {
-    vec3 blendPercent = normalize(abs(normES));
+    vec3 blendPercent = normalize(abs(normG));
     float blendSum = (blendPercent.x + blendPercent.y + blendPercent.z);
     blendPercent = blendPercent/vec3(blendSum);
 
-    vec4 xaxis = texture(textureToSample, posES.yz * scale);
-    vec4 yaxis = texture(textureToSample, posES.xz * scale);
-    vec4 zaxis = texture(textureToSample, posES.xy * scale);
+    vec4 xaxis = texture(textureToSample, posG.yz * scale);
+    vec4 yaxis = texture(textureToSample, posG.xz * scale);
+    vec4 zaxis = texture(textureToSample, posG.xy * scale);
 
     return xaxis * blendPercent.x + yaxis * blendPercent.y + zaxis * blendPercent.z;
 }
 
 void getObjCol() {
-    float height = posES.y/scale;
+    float height = posG.y/scale;
     vec3 green = vec3(0.3, 0.35, 0.15);
     vec3 gray = vec3(0.5, 0.4, 0.5);
     vec3 white = vec3(1.0, 1.0, 1.0);
@@ -64,7 +64,7 @@ void getObjCol() {
         objCol = mix(green, gray, smoothstep(0.3, 0.4, height));
     }
 
-    if (posES.y < waterLevel) {
+    if (posG.y < waterLevel) {
         objCol = vec3(0.761, 0.698, 0.52);
     } 
 }

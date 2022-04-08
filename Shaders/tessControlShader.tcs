@@ -1,100 +1,60 @@
-// first step of tesselation shader
-// tesselation control shader add/deletes control points and determines the tesselatation level
-// patch has three control points here (three vertices for each triangle)
-
-
 #version 450 core
 layout (vertices = 3) out;
 
-float GetTessLevel(float viewPos, float fragPos);
+float GetTessLevel(float dist1, float dist2);
 
-// vectors stored as arrays - each patch has three vertices, each with an xyz pos and xyz norm value 
-//posVS = position from Vertex Shader, posTC = position from this Tesselation Control shader
 
 in vec3 posVS[];
 in vec2 texCoordsVS[];
-// in vec3 normVS[] ;
 
 out vec3 posTC[];
 out vec2 texCoordsTC[];
-// out vec3 normTC[] ;
 
 uniform vec3 viewPos;
-uniform bool stepTessOn;
-uniform bool linearTessOn;
-uniform bool expoTessOn;
 
 void main()
 {
-   // gpu can calculate each control point in parallel
-   // tesselation level same for entire patch so only need to set it once (for the first control point)
-   // gl_invocation called for each control point
    if (gl_InvocationID==0)
    {
 		// Calculate the tessellation levels
 
-        float cameraToVertexDist[3];
+        float cameraToVertexDist0 = distance(viewPos, posVS[0]);
+        float cameraToVertexDist1 = distance(viewPos, posVS[1]);
+        float cameraToVertexDist2 = distance(viewPos, posVS[2]);
 
-        cameraToVertexDist[0] = distance(viewPos, posVS[0]);
-        cameraToVertexDist[1] = distance(viewPos, posVS[1]);
-        cameraToVertexDist[2] = distance(viewPos, posVS[2]);
-
-        //gl_TessLevelOuter[0] = GetTessLevel(cameraToVertexDist[0], cameraToVertexDist[1]);
-        //gl_TessLevelOuter[1] = GetTessLevel(cameraToVertexDist[1], cameraToVertexDist[2]);
-        //gl_TessLevelOuter[2] = GetTessLevel(cameraToVertexDist[2], cameraToVertexDist[0]);
-
-        gl_TessLevelOuter[0] = GetTessLevel(cameraToVertexDist[1], cameraToVertexDist[2]);
-        gl_TessLevelOuter[1] = GetTessLevel(cameraToVertexDist[2], cameraToVertexDist[0]);
-        gl_TessLevelOuter[2] = GetTessLevel(cameraToVertexDist[0], cameraToVertexDist[1]);
+        gl_TessLevelOuter[0] = GetTessLevel(cameraToVertexDist1, cameraToVertexDist2);
+        gl_TessLevelOuter[1] = GetTessLevel(cameraToVertexDist2, cameraToVertexDist0);
+        gl_TessLevelOuter[2] = GetTessLevel(cameraToVertexDist0, cameraToVertexDist1);
 
         gl_TessLevelInner[0] = gl_TessLevelOuter[2];
    }
 
-   // pass through position and normal information
    posTC[gl_InvocationID]  = posVS[gl_InvocationID] ;
    texCoordsTC[gl_InvocationID] = texCoordsVS[gl_InvocationID];
-   // normTC[gl_InvocationID] = normVS[gl_InvocationID] ;
 }
 
 float GetTessLevel(float dist1, float dist2) {
     float avg = (dist1 + dist2) / 2.0;
 
-    if (stepTessOn) {
-            if (avg < 50) {
-                return 1000;
-            } else if (avg < 70) {
-                return 15;
-            } else if (avg < 100) {
-                return 10;
-            } else {
-                return 5;
-            }
-    }
+    if (avg < 100) {
+     return 32;
+    } else if (avg < 150) {
+        return 16;
+    } else if (avg < 200) {
+        return 8;
+    } else if (avg < 500) {
+        return 4;
+    } 
 
-    if (linearTessOn) {
-        float a = 100.0;
-        float b = -0.5;
-
-        float result = a + b * avg;
-        
-        if (result > 1.0) {
-            return result;
-        }
-
-        return 1;
-    }
-
-    if (expoTessOn) {
-        //float c = 10.0;
-        //float e = 2.718;
-        //float k = 0.0025;
-
-        //return c * pow(e, -avg) * k;
-
-        float a = 0.8;
-        float k = 100.0;
-        return pow(a, avg) * k;
-    }
+    //
+    //float a = -1.5;
+    //float b = 500;
+    //
+    //float result = a * avg + b;
+    //    
+    //if (result > 1.0) {
+    //    return result;
+    //}
 
     return 1;
 }

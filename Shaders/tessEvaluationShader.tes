@@ -11,8 +11,6 @@ float hash(float n);
 float snoise(vec3 x);
 float noise(vec3 position, int octaves);
 
-// unifrom matrices to perform transformations
-// previously this would have been done in vertex shader
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
@@ -20,16 +18,12 @@ uniform mat4 projection;
 uniform sampler2D heightMap;
 uniform float scale;
 uniform vec3 viewPos;
-uniform vec4 plane;
 
-// read in vector arrays from previous shader
 in vec3 posTC[] ;
 in vec2 texCoordsTC[];
-// in vec3 normTC[] ;
 
-// pass along the interpolated values
-out vec3 normES ;
-out vec3 posES ;
+//out vec3 normES ;
+out vec3 posES;
 out vec2 texCoordsES;
 out float visibility;
 
@@ -37,26 +31,24 @@ out float visibility;
 void main()
 {
 
-    // interpolate the normal and xyz position using the linear interpolation function
-    // use 3D because they are in three dimensions; 2D also included for uv texture coordinates
 
-   // normES = interpolate3D(normTC[0], normTC[1], normTC[2]) ;
    posES = interpolate3D(posTC[0], posTC[1], posTC[2]) ;
    texCoordsES = interpolate2D(texCoordsTC[0], texCoordsTC[1], texCoordsTC[2]);
 
    float height = texture(heightMap, texCoordsES).x;
    //posES.y = height * scale;
+
    posES.y = noise(posES, 100);
 
-   float right = (textureOffset(heightMap, texCoordsES, ivec2(1, 0)).x) * scale;
-   float left = (textureOffset(heightMap, texCoordsES, ivec2(-1, 0)).x) * scale;
-   float up = (textureOffset(heightMap, texCoordsES, ivec2(0, 1)).x) * scale;
-   float down = (textureOffset(heightMap, texCoordsES, ivec2(0, -1)).x) * scale;
+   //float right = (textureOffset(heightMap, texCoordsES, ivec2(1, 0)).x) * scale;
+   //float left = (textureOffset(heightMap, texCoordsES, ivec2(-1, 0)).x) * scale;
+   //float up = (textureOffset(heightMap, texCoordsES, ivec2(0, 1)).x) * scale;
+   //float down = (textureOffset(heightMap, texCoordsES, ivec2(0, -1)).x) * scale;
 
-   float lr = left - right;
-   float ud = up - down;
+   //float lr = left - right;
+   //float ud = up - down;
 
-   normES = normalize(vec3(lr, 2.0, ud));
+   //normES = normalize(vec3(lr, 2.0, ud));
 
    // fog
 
@@ -64,9 +56,6 @@ void main()
    visibility = exp(-pow((distanceFromCamera * 0.004), 1.2));
    visibility = clamp(visibility, 0.0, 1.0);
 
-   // transform vertex to clip space  - NOTE: WE NEED TO DO IT HERE NOW and not in vertex shader
-
-	gl_ClipDistance[0] = dot(vec4(posES, 1.0), plane);
 	gl_Position = projection * view * model * vec4(posES, 1.0);
 } 
 
